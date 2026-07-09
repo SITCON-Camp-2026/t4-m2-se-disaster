@@ -15,7 +15,64 @@
 }
 
 body {
+  min-height: 100vh;
   margin: 0;
+  background:
+    linear-gradient(
+      180deg,
+      rgb(235 244 251 / 94%) 0%,
+      rgb(246 248 251 / 96%) 42%,
+      #edf2f6 100%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 32px,
+      rgb(55 78 99 / 10%) 32px 34px
+    );
+}
+
+body::before {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  height: 190px;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(180deg, transparent 0%, rgb(246 248 251 / 86%) 78%),
+    linear-gradient(
+      90deg,
+      transparent 0 3%,
+      rgb(31 54 72 / 14%) 3% 7%,
+      transparent 7% 10%,
+      rgb(31 54 72 / 12%) 10% 15%,
+      transparent 15% 19%,
+      rgb(31 54 72 / 16%) 19% 24%,
+      transparent 24% 28%,
+      rgb(31 54 72 / 13%) 28% 32%,
+      transparent 32% 37%,
+      rgb(31 54 72 / 15%) 37% 43%,
+      transparent 43% 49%,
+      rgb(31 54 72 / 11%) 49% 54%,
+      transparent 54% 58%,
+      rgb(31 54 72 / 16%) 58% 63%,
+      transparent 63% 68%,
+      rgb(31 54 72 / 12%) 68% 74%,
+      transparent 74% 80%,
+      rgb(31 54 72 / 15%) 80% 86%,
+      transparent 86% 90%,
+      rgb(31 54 72 / 12%) 90% 96%,
+      transparent 96% 100%
+    );
+  background-repeat: no-repeat;
+  background-size:
+    100% 100%,
+    100% 150px;
+  background-position:
+    center bottom,
+    center bottom;
 }
 
 button {
@@ -39,6 +96,8 @@ textarea:focus-visible {
 }
 
 .layout {
+  position: relative;
+  z-index: 1;
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
   padding: 32px 0 56px;
@@ -51,7 +110,7 @@ textarea:focus-visible {
   align-items: end;
   padding: 28px;
   border-radius: 8px;
-  background: #ffffff;
+  background: rgb(255 255 255 / 94%);
   border: 1px solid #dbe4ef;
   box-shadow: 0 12px 32px rgb(23 32 42 / 7%);
 }
@@ -157,7 +216,7 @@ textarea:focus-visible {
   padding: 24px;
   border: 1px solid #dbe4ef;
   border-radius: 8px;
-  background: #ffffff;
+  background: rgb(255 255 255 / 96%);
 }
 
 .panel__header {
@@ -212,10 +271,19 @@ textarea:focus-visible {
   box-shadow: 0 0 0 3px rgb(36 93 157 / 12%);
 }
 
-.record-card--priority {
+.record-card--high {
   border-color: #d92d20;
   background: #fff7f6;
   box-shadow: 0 0 0 3px rgb(217 45 32 / 10%);
+}
+
+.record-card--medium {
+  border-color: #d99a20;
+  background: #fffaf0;
+}
+
+.record-card--low {
+  border-color: #dbe4ef;
 }
 
 .record-card__header {
@@ -260,10 +328,25 @@ textarea:focus-visible {
   border-left: 4px solid #d92d20;
   margin: 14px 0 0;
   padding: 8px 10px;
-  background: #fee4e2;
-  color: #9f1f17;
   font-size: 0.92rem;
   font-weight: 700;
+}
+
+.priority-note--high {
+  background: #fee4e2;
+  color: #9f1f17;
+}
+
+.priority-note--medium {
+  border-left-color: #d99a20;
+  background: #fff3cd;
+  color: #8a5a00;
+}
+
+.priority-note--low {
+  border-left-color: #7a8b9a;
+  background: #f4f7fb;
+  color: #344054;
 }
 
 .record-card button,
@@ -372,15 +455,30 @@ textarea:focus-visible {
   box-shadow: inset 4px 0 0 #245d9d;
 }
 
-.workbench__queue button.queue-item--priority {
+.workbench__queue button.queue-item--high {
   border-color: #d92d20;
   background: #fff7f6;
 }
 
-.workbench__queue button.queue-item--priority.active {
+.workbench__queue button.queue-item--high.active {
   border-color: #d92d20;
   background: #fee4e2;
   box-shadow: inset 4px 0 0 #d92d20;
+}
+
+.workbench__queue button.queue-item--medium {
+  border-color: #d99a20;
+  background: #fffaf0;
+}
+
+.workbench__queue button.queue-item--medium.active {
+  border-color: #d99a20;
+  background: #fff3cd;
+  box-shadow: inset 4px 0 0 #d99a20;
+}
+
+.workbench__queue button.queue-item--low {
+  border-color: #dbe4ef;
 }
 
 .queue-item__top {
@@ -400,10 +498,23 @@ textarea:focus-visible {
   width: fit-content;
   border-radius: 8px;
   padding: 4px 8px;
-  background: #d92d20;
-  color: #ffffff;
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.priority-badge--high {
+  background: #d92d20;
+  color: #ffffff;
+}
+
+.priority-badge--medium {
+  background: #fff3cd;
+  color: #8a5a00;
+}
+
+.priority-badge--low {
+  background: #e9eef5;
+  color: #344054;
 }
 
 .workbench__main {
@@ -453,6 +564,23 @@ textarea:focus-visible {
 .review-badge {
   background: #fff3cd;
   color: #8a5a00;
+}
+
+.save-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 8px;
+  padding: 4px 8px;
+  background: #fff3cd;
+  color: #8a5a00;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.save-badge--saved {
+  background: #dff7e8;
+  color: #116b37;
 }
 
 .judgement-card h3,

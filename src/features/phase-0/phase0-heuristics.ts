@@ -1,4 +1,8 @@
-import type { Phase0JudgementDraft, Phase0MessyRecord } from "./phase0-types";
+import type {
+  Phase0JudgementDraft,
+  Phase0MessyRecord,
+  Phase0ReviewSignalLevel,
+} from "./phase0-types";
 
 export function createPhase0Judgement(
   record: Phase0MessyRecord,
@@ -15,6 +19,7 @@ export function createPhase0Judgement(
       : ["目前不是已確認資訊，不能直接行動或當成事實發布。"],
     suggestedNextStep: isVerified ? "keep_raw" : "send_to_human_review",
     unsafeToActDirectly: true,
+    draftStatus: "needs_human_review",
   };
 }
 
@@ -59,31 +64,54 @@ export function createPhase0EditableDraft(
       ? "create_site_update_suggestion"
       : "send_to_human_review",
     unsafeToActDirectly: true,
+    draftStatus: "needs_human_review",
     humanReviewNote: hasProxyOperator
       ? "先確認轉述者、當事人同意與現場狀況，不要直接派任務。"
       : "請小組對照原文確認這只是候選整理。",
   };
 }
 
+function scoreReviewSignal(record: Phase0MessyRecord) {
+  const rawText = record.rawText;
+  let score = 0;
+
+  if (/\d{1,2}:\d{2}/.test(rawText)) score += 3;
+  if (/\d+/.test(rawText)) score += 2;
+  if (rawText.includes("確認")) score += 2;
+  if (rawText.includes("預計")) score += 1;
+  if (rawText.includes("只接受") || rawText.includes("不要")) score += 2;
+  if (rawText.includes("封閉") || rawText.includes("淹水")) score += 2;
+  if (rawText.includes("藥品")) score += 2;
+  if (rawText.includes("不知道") || rawText.includes("不確定")) score -= 2;
+  if (rawText.includes("尚未")) score -= 1;
+
+  return score;
+}
+
+export function getPhase0ReviewSignal(record: Phase0MessyRecord): {
+  level: Phase0ReviewSignalLevel;
+  label: string;
+} {
+  const score = scoreReviewSignal(record);
+
+  if (score >= 6) {
+    return { level: "high", label: "AI 候選：高優先人工確認" };
+  }
+
+  if (score >= 3) {
+    return { level: "medium", label: "AI 候選：中優先人工確認" };
+  }
+
+  return { level: "low", label: "AI 候選：一般人工確認" };
+}
+
 export function getPhase0PriorityReviewCandidateId(
   records: Phase0MessyRecord[],
 ) {
-  const scoredRecords = records.map((record) => {
-    const rawText = record.rawText;
-    let score = 0;
-
-    if (/\d{1,2}:\d{2}/.test(rawText)) score += 3;
-    if (/\d+/.test(rawText)) score += 2;
-    if (rawText.includes("確認")) score += 2;
-    if (rawText.includes("預計")) score += 1;
-    if (rawText.includes("只接受") || rawText.includes("不要")) score += 2;
-    if (rawText.includes("封閉") || rawText.includes("淹水")) score += 2;
-    if (rawText.includes("藥品")) score += 2;
-    if (rawText.includes("不知道") || rawText.includes("不確定")) score -= 2;
-    if (rawText.includes("尚未")) score -= 1;
-
-    return { id: record.id, score };
-  });
+  const scoredRecords = records.map((record) => ({
+    id: record.id,
+    score: scoreReviewSignal(record),
+  }));
 
   return scoredRecords.sort((left, right) => right.score - left.score)[0]?.id;
 }

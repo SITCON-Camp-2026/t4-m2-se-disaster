@@ -1,7 +1,10 @@
 import { SourceLabel } from "../../components/SourceLabel";
 import { StatusBadge } from "../../components/StatusBadge";
 import { formatDateTime } from "../../lib/date";
-import { getPhase0PriorityReviewCandidateId } from "./phase0-heuristics";
+import {
+  getPhase0PriorityReviewCandidateId,
+  getPhase0ReviewSignal,
+} from "./phase0-heuristics";
 import type { Phase0MessyRecord, Phase0RawStatusFilter } from "./phase0-types";
 
 const filterLabels: Record<Phase0RawStatusFilter, string> = {
@@ -49,37 +52,46 @@ export function Phase0RawInfoPanel({
       </div>
 
       <div className="grid">
-        {visibleRecords.map((record) => (
-          <article
-            className={`record-card ${record.id === selectedRecordId ? "record-card--selected" : ""} ${
-              record.id === priorityCandidateId ? "record-card--priority" : ""
-            }`}
-            key={record.id}
-          >
-            <div className="record-card__header">
-              <h3>{record.id}</h3>
-              <StatusBadge status={record.verificationStatus} />
-            </div>
-            <p>{record.rawText}</p>
-            <div className="record-card__meta">
-              <span>
-                來源：
-                <SourceLabel sourceType={record.sourceType} />
-              </span>
-              <span>查核：尚未成為已確認資料</span>
-              <span>更新：{formatDateTime(record.updatedAt)}</span>
-            </div>
-            {record.id === priorityCandidateId ? (
-              <p className="priority-note">
-                AI 候選：資料較完整，建議優先人工確認。
-              </p>
-            ) : null}
-            <p className="record-card__notice">不能直接當成任務或公告。</p>
-            <button type="button" onClick={() => onSelect(record.id)}>
-              整理這筆
-            </button>
-          </article>
-        ))}
+        {visibleRecords.map((record) =>
+          (() => {
+            const reviewSignal = getPhase0ReviewSignal(record);
+            const isPriorityCandidate = record.id === priorityCandidateId;
+
+            return (
+              <article
+                className={`record-card record-card--${reviewSignal.level} ${
+                  record.id === selectedRecordId ? "record-card--selected" : ""
+                }`}
+                key={record.id}
+              >
+                <div className="record-card__header">
+                  <h3>{record.id}</h3>
+                  <StatusBadge status={record.verificationStatus} />
+                </div>
+                <p>{record.rawText}</p>
+                <div className="record-card__meta">
+                  <span>
+                    來源：
+                    <SourceLabel sourceType={record.sourceType} />
+                  </span>
+                  <span>查核：尚未成為已確認資料</span>
+                  <span>更新：{formatDateTime(record.updatedAt)}</span>
+                </div>
+                <p
+                  className={`priority-note priority-note--${reviewSignal.level}`}
+                >
+                  {isPriorityCandidate
+                    ? "AI 候選：最高優先人工確認。"
+                    : reviewSignal.label}
+                </p>
+                <p className="record-card__notice">不能直接當成任務或公告。</p>
+                <button type="button" onClick={() => onSelect(record.id)}>
+                  整理這筆
+                </button>
+              </article>
+            );
+          })(),
+        )}
       </div>
     </div>
   );

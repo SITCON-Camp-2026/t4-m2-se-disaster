@@ -81,9 +81,28 @@ describe("App", () => {
       screen.getByRole("button", { name: /需要人工確認\s*6/ }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("候選類型")).toBeInTheDocument();
+    expect(screen.getByLabelText("草稿狀態")).toHaveValue("needs_human_review");
+    expect(screen.getByText("未儲存變更")).toBeInTheDocument();
     expect(screen.getByLabelText("不能直接變成任務或行動")).toBeChecked();
     expect(screen.queryByText("不可直接派工")).not.toBeInTheDocument();
-    expect(screen.getByText(/AI 候選：優先人工確認/)).toBeInTheDocument();
+    expect(screen.getByText(/AI 候選：最高優先人工確認/)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("草稿狀態"), {
+      target: { value: "human_reviewed" },
+    });
+
+    expect(screen.getByLabelText("草稿狀態")).toHaveValue("human_reviewed");
+    expect(screen.getByText(/草稿狀態：人工已看過/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "儲存草稿" }));
+
+    expect(screen.getAllByText("已儲存").length).toBeGreaterThan(0);
+
+    fireEvent.change(screen.getByLabelText("草稿狀態"), {
+      target: { value: "do_not_use" },
+    });
+
+    expect(screen.getByText("未儲存變更")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /不能直接行動\s*6/ }));
 

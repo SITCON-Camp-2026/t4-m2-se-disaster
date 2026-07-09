@@ -19,6 +19,11 @@ export type Phase0SuggestedNextStep =
 
 export type Phase0RawStatusFilter = "all" | "needs_review" | "unverified";
 
+export type Phase0DraftStatus =
+  "draft" | "needs_human_review" | "human_reviewed" | "do_not_use";
+
+export type Phase0ReviewSignalLevel = "high" | "medium" | "low";
+
 export type Phase0MessyRecord = {
   id: string;
   rawText: string;
@@ -35,5 +40,6 @@ export type Phase0JudgementDraft = {
   blockers: string[];
   suggestedNextStep: Phase0SuggestedNextStep;
   unsafeToActDirectly: boolean;
+  draftStatus: Phase0DraftStatus;
   humanReviewNote?: string;
 };

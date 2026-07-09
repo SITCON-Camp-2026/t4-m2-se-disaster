@@ -6,9 +6,11 @@ import {
   createPhase0EditableDraft,
   createPhase0Judgement,
   getPhase0PriorityReviewCandidateId,
+  getPhase0ReviewSignal,
 } from "./phase0-heuristics";
 import type {
   Phase0Confidence,
+  Phase0DraftStatus,
   Phase0JudgementDraft,
   Phase0MessyRecord,
   Phase0PossibleKind,
@@ -37,6 +39,17 @@ const confidenceOptions: Array<{ value: Phase0Confidence; label: string }> = [
   { value: "medium", label: "中" },
   { value: "high", label: "高" },
 ];
+
+const draftStatusOptions: Array<{ value: Phase0DraftStatus; label: string }> = [
+  { value: "draft", label: "草稿" },
+  { value: "needs_human_review", label: "待人工確認" },
+  { value: "human_reviewed", label: "人工已看過" },
+  { value: "do_not_use", label: "暫不使用" },
+];
+
+const draftStatusLabels: Record<Phase0DraftStatus, string> = Object.fromEntries(
+  draftStatusOptions.map((option) => [option.value, option.label]),
+) as Record<Phase0DraftStatus, string>;
 
 const nextStepOptions: Array<{
   value: Phase0SuggestedNextStep;
@@ -99,6 +112,7 @@ export function Phase0Workbench({
   const initialDrafts = useMemo(() => createInitialDrafts(records), [records]);
   const [drafts, setDrafts] =
     useState<Record<string, Phase0JudgementDraft>>(initialDrafts);
+  const [savedDraftIds, setSavedDraftIds] = useState<Set<string>>(new Set());
   const [summaryFilter, setSummaryFilter] =
     useState<WorkbenchSummaryFilter>("drafts");
   const selectedRecord =
@@ -116,6 +130,7 @@ export function Phase0Workbench({
     return record ? needsHumanReview(record) : false;
   }).length;
   const selectedNeedsReview = needsHumanReview(selectedRecord);
+  const selectedDraftIsSaved = savedDraftIds.has(selectedRecord.id);
   const visibleQueueRecords = records.filter((record) => {
     const draft = drafts[record.id];
 
@@ -160,6 +175,13 @@ export function Phase0Workbench({
       ...current,
       [record.id]: createPhase0EditableDraft(record),
     }));
+    setSavedDraftIds((current) => {
+      const next = new Set(current);
+
+      next.delete(record.id);
+
+      return next;
+    });
   }
 
   function updateSelectedDraft(patch: Partial<Phase0JudgementDraft>) {
@@ -175,6 +197,27 @@ export function Phase0Workbench({
         },
       };
     });
+    setSavedDraftIds((current) => {
+      const next = new Set(current);
+
+      next.delete(selectedRecord.id);
+
+      return next;
+    });
+  }
+
+  function saveSelectedDraft() {
+    if (!selectedDraft) {
+      return;
+    }
+
+    setSavedDraftIds((current) => {
+      const next = new Set(current);
+
+      next.add(selectedRecord.id);
+
+      return next;
+    });
   }
 
   function deleteSelectedDraft() {
@@ -182,6 +225,13 @@ export function Phase0Workbench({
       const next = { ...current };
 
       delete next[selectedRecord.id];
+
+      return next;
+    });
+    setSavedDraftIds((current) => {
+      const next = new Set(current);
+
+      next.delete(selectedRecord.id);
 
       return next;
     });
@@ -234,28 +284,39 @@ export function Phase0Workbench({
             <h3>選擇一筆</h3>
             <span>{visibleQueueRecords.length} 筆</span>
           </div>
-          {visibleQueueRecords.map((record) => (
-            <button
-              className={`${record.id === selectedRecord.id ? "active" : ""} ${
-                record.id === priorityCandidateId ? "queue-item--priority" : ""
-              }`}
-              key={record.id}
-              type="button"
-              onClick={() => onSelect(record.id)}
-            >
-              <span className="queue-item__top">
-                <strong>{record.id}</strong>
-                <StatusBadge status={record.verificationStatus} />
-              </span>
-              <span className="queue-item__meta">
-                {drafts[record.id] ? "已有草稿" : "尚未建草稿"} ·{" "}
-                {needsHumanReview(record) ? "需人工確認" : "可先保留"}
-              </span>
-              {record.id === priorityCandidateId ? (
-                <span className="priority-badge">AI 候選：優先人工確認</span>
-              ) : null}
-            </button>
-          ))}
+          {visibleQueueRecords.map((record) => {
+            const draft = drafts[record.id];
+            const reviewSignal = getPhase0ReviewSignal(record);
+
+            return (
+              <button
+                className={`${record.id === selectedRecord.id ? "active" : ""} queue-item--${reviewSignal.level}`}
+                key={record.id}
+                type="button"
+                onClick={() => onSelect(record.id)}
+              >
+                <span className="queue-item__top">
+                  <strong>{record.id}</strong>
+                  <StatusBadge status={record.verificationStatus} />
+                </span>
+                <span className="queue-item__meta">
+                  {draft
+                    ? `草稿狀態：${draftStatusLabels[draft.draftStatus]}`
+                    : "尚未建草稿"}{" "}
+                  ·{" "}
+                  {draft && savedDraftIds.has(record.id) ? "已儲存" : "未儲存"}{" "}
+                  · {needsHumanReview(record) ? "需人工確認" : "可先保留"}
+                </span>
+                <span
+                  className={`priority-badge priority-badge--${reviewSignal.level}`}
+                >
+                  {record.id === priorityCandidateId
+                    ? "AI 候選：最高優先人工確認"
+                    : reviewSignal.label}
+                </span>
+              </button>
+            );
+          })}
         </aside>
 
         <div className="workbench__main">
@@ -281,7 +342,13 @@ export function Phase0Workbench({
                   <p className="eyebrow">可編輯整理草稿</p>
                   <h3>{selectedRecord.id} 候選判斷</h3>
                 </div>
-                <StatusBadge status="draft" />
+                <span
+                  className={`save-badge ${
+                    selectedDraftIsSaved ? "save-badge--saved" : ""
+                  }`}
+                >
+                  {selectedDraftIsSaved ? "已儲存" : "未儲存變更"}
+                </span>
               </div>
 
               <p>
@@ -294,6 +361,24 @@ export function Phase0Workbench({
                   <h4>先判斷它可能是什麼</h4>
                 </div>
                 <div className="draft-editor__grid">
+                  <label>
+                    草稿狀態
+                    <select
+                      value={selectedDraft.draftStatus}
+                      onChange={(event) =>
+                        updateSelectedDraft({
+                          draftStatus: event.target.value as Phase0DraftStatus,
+                        })
+                      }
+                    >
+                      {draftStatusOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
                   <label>
                     候選類型
                     <select
@@ -420,6 +505,9 @@ export function Phase0Workbench({
               ) : null}
 
               <div className="draft-editor__actions">
+                <button type="button" onClick={saveSelectedDraft}>
+                  儲存草稿
+                </button>
                 <button
                   type="button"
                   onClick={() => upsertDraft(selectedRecord)}
@@ -471,7 +559,13 @@ export function Phase0Workbench({
             </li>
             <li>請挑至少 2 個候選判斷由人類質疑或修正</li>
           </ul>
-          <button type="button" onClick={() => setDrafts(initialDrafts)}>
+          <button
+            type="button"
+            onClick={() => {
+              setDrafts(initialDrafts);
+              setSavedDraftIds(new Set());
+            }}
+          >
             重設全部草稿
           </button>
         </aside>

@@ -34,6 +34,8 @@
 | 2026-07-09 | Phase 0 | 調整工作台摘要按鈕   | 建議把草稿、不能直接行動、需要人工確認三格改成按鈕，並移除目前處理列的「不可直接派工」標籤 | 採用        | 保留「不能直接行動」作為草稿欄位，但移除容易造成派工語意的紅色標籤                 | `src/features/phase-0/Phase0Workbench.tsx`, `src/styles/global.css`, `tests/app-smoke.test.tsx`                                        |
 | 2026-07-09 | Phase 0 | 刪除重複分類按鈕     | 建議保留上方全域摘要按鈕，刪除原始資訊區內重複的三格分類控制                               | 採用        | 上方按鈕已能跨頁導覽與篩選；下方重複控制會增加認知負擔                             | `src/features/phase-0/Phase0RawInfoPanel.tsx`, `src/styles/global.css`, `tests/app-smoke.test.tsx`                                     |
 | 2026-07-09 | Phase 0 | 標示 AI 優先確認候選 | 建議用 mock 原文完整度與限制語句評分，將候選小卡標紅                                       | 部分採用    | 只標示為「AI 候選：優先人工確認」，不採用「最緊急」作為真實救災判斷                | `src/features/phase-0/phase0-heuristics.ts`, `src/features/phase-0/Phase0Workbench.tsx`, `src/features/phase-0/Phase0RawInfoPanel.tsx` |
+| 2026-07-09 | Phase 0 | 重新檢視按鈕與顏色   | 建議按高 / 中 / 低人工確認等級套色，並讓草稿狀態可由使用者更新                             | 採用        | 顏色只表示 AI 候選人工確認等級，不表示真實緊急派工；草稿狀態維持可編輯             | `src/features/phase-0/phase0-types.ts`, `src/features/phase-0/phase0-heuristics.ts`, `src/features/phase-0/Phase0Workbench.tsx`        |
+| 2026-07-09 | Phase 0 | 增加背景與儲存狀態   | 建議使用抽象城市背景，並新增草稿儲存按鈕與已儲存 / 未儲存標籤                              | 採用        | 背景不使用真實城市或地圖；儲存只保留在前端記憶體，不使用 localStorage 或後端       | `src/features/phase-0/Phase0Workbench.tsx`, `src/styles/global.css`, `tests/app-smoke.test.tsx`                                        |
 
 ## 範例
 
