@@ -53,7 +53,7 @@ export function App() {
   }
 
   return (
-    <main className="layout">
+    <main className={`layout ${isV1Route ? "layout--war-room" : ""}`}>
       <header className="hero">
         <div>
           <p className="eyebrow">

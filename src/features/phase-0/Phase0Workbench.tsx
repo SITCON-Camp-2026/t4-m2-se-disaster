@@ -1,10 +1,8 @@
 import { useMemo, useState } from "react";
 import { RecordCard } from "../../components/RecordCard";
 import { StatusBadge } from "../../components/StatusBadge";
-import { Phase0JudgementCard } from "./Phase0JudgementCard";
 import {
   createPhase0EditableDraft,
-  createPhase0Judgement,
   getPhase0PriorityReviewCandidateId,
   getPhase0ReviewSignal,
 } from "./phase0-heuristics";
@@ -113,71 +111,6 @@ function getActionBoundary(
   };
 }
 
-function getConfirmationReasons(
-  record: Phase0MessyRecord,
-  draft?: Phase0JudgementDraft,
-) {
-  const reasons = new Set<string>();
-
-  if (record.verificationStatus !== "verified") {
-    reasons.add("查核狀態不是已確認");
-  }
-
-  if (
-    record.rawText.includes("代一位") ||
-    record.rawText.includes("家屬") ||
-    record.rawText.includes("有人說") ||
-    record.rawText.includes("有人在群組")
-  ) {
-    reasons.add("來源或轉述者需要確認");
-  }
-
-  if (
-    record.rawText.includes("不確定") ||
-    record.rawText.includes("不知道") ||
-    record.rawText.includes("尚未")
-  ) {
-    reasons.add("原文含有不確定或尚未完成的資訊");
-  }
-
-  if (draft?.unsafeToActDirectly) {
-    reasons.add("整理筆記仍標示不能直接變成任務或行動");
-  }
-
-  if (draft?.suggestedNextStep === "create_candidate_report") {
-    reasons.add("待查通報線索不是正式通報");
-  }
-
-  if (draft?.suggestedNextStep === "create_site_update_suggestion") {
-    reasons.add("待查地點線索不是正式任務");
-  }
-
-  if (draft?.humanReviewNote?.trim()) {
-    reasons.add("人工筆記已留下待確認原因");
-  }
-
-  if (reasons.size === 0) {
-    reasons.add("離開線索工作台前仍需具權限人類確認");
-  }
-
-  return [...reasons];
-}
-
-function getFlowStopLabel(
-  record: Phase0MessyRecord,
-  draft?: Phase0JudgementDraft,
-) {
-  if (draft?.draftStatus === "do_not_use") {
-    return "流程停在：暫時不採用";
-  }
-
-  if (needsHumanReview(record) || draft?.unsafeToActDirectly) {
-    return "流程停在：閱讀與等待確認";
-  }
-
-  return "流程停在：線索工作台，尚未進入正式任務";
-}
-
 export function Phase0Workbench({
   records,
   selectedRecordId,
@@ -196,7 +129,6 @@ export function Phase0Workbench({
   const selectedRecord =
     records.find((record) => record.id === selectedRecordId) ?? records[0];
   const priorityCandidateId = getPhase0PriorityReviewCandidateId(records);
-  const safetyBoundary = createPhase0Judgement(selectedRecord);
   const selectedDraft = drafts[selectedRecord.id];
   const draftCount = Object.keys(drafts).length;
   const unsafeDraftCount = Object.values(drafts).filter(
@@ -210,11 +142,6 @@ export function Phase0Workbench({
   const selectedNeedsReview = needsHumanReview(selectedRecord);
   const selectedDraftIsSaved = savedDraftIds.has(selectedRecord.id);
   const actionBoundary = getActionBoundary(selectedRecord, selectedDraft);
-  const confirmationReasons = getConfirmationReasons(
-    selectedRecord,
-    selectedDraft,
-  );
-  const flowStopLabel = getFlowStopLabel(selectedRecord, selectedDraft);
   const visibleQueueRecords = records.filter((record) => {
     const draft = drafts[record.id];
 
@@ -426,22 +353,6 @@ export function Phase0Workbench({
             <span>{actionBoundary.detail}</span>
           </section>
 
-          <section className="flow-stop-panel" aria-label="流程停點">
-            <div>
-              <p className="eyebrow">依 flow.md 的停點</p>
-              <h3>{flowStopLabel}</h3>
-              <p>
-                AI
-                提醒只能說明原文看似急迫或資訊較完整，不能判斷真實緊急、派工、出發或公開資訊。
-              </p>
-            </div>
-            <ul>
-              {confirmationReasons.map((reason) => (
-                <li key={reason}>{reason}</li>
-              ))}
-            </ul>
-          </section>
-
           {selectedDraft ? (
             <article className="draft-editor">
               <div className="draft-editor__header">
@@ -562,32 +473,6 @@ export function Phase0Workbench({
                 </label>
               </section>
 
-              <section className="draft-section draft-section--compact">
-                <div className="draft-section__title">
-                  <span>3</span>
-                  <h4>本筆需要確認的原因</h4>
-                </div>
-                <ul className="draft-summary-list">
-                  {confirmationReasons.map((reason) => (
-                    <li key={reason}>{reason}</li>
-                  ))}
-                </ul>
-              </section>
-
-              <section className="draft-section draft-section--compact">
-                <div className="draft-section__title">
-                  <span>!</span>
-                  <h4>自動保留的安全提醒</h4>
-                </div>
-                <ul className="draft-summary-list">
-                  {[...selectedDraft.evidence, ...selectedDraft.blockers].map(
-                    (item) => (
-                      <li key={item}>{item}</li>
-                    ),
-                  )}
-                </ul>
-              </section>
-
               {selectedNeedsReview ? (
                 <p className="draft-editor__warning">
                   這筆資訊目前需要人工確認；若操作者不是當事人，還要確認授權、位置與現況。
@@ -625,11 +510,6 @@ export function Phase0Workbench({
               </button>
             </article>
           )}
-
-          <Phase0JudgementCard
-            judgement={safetyBoundary}
-            record={selectedRecord}
-          />
         </div>
 
         <aside className="workbench__checklist">
