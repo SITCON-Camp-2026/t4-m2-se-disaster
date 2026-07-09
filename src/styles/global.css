@@ -618,6 +618,10 @@ textarea:focus-visible {
   background: #ffffff;
 }
 
+.draft-section--compact {
+  background: #f8fafc;
+}
+
 .draft-section__title {
   display: flex;
   align-items: center;
@@ -668,6 +672,11 @@ textarea:focus-visible {
   grid-template-columns: auto 1fr;
   align-items: center;
   width: fit-content;
+  margin-top: 2px;
+  border: 1px solid #dbe4ef;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #f8fafc;
 }
 
 .draft-editor__warning {
@@ -685,6 +694,24 @@ textarea:focus-visible {
   padding: 8px 10px;
   background: #ffffff;
   cursor: pointer;
+}
+
+.draft-editor__actions {
+  flex-wrap: wrap;
+}
+
+.draft-editor__actions button:first-child {
+  border-color: #245d9d;
+  background: #245d9d;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.draft-summary-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #344054;
+  line-height: 1.6;
 }
 
 .judgement-summary {

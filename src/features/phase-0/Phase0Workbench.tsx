@@ -9,7 +9,6 @@ import {
   getPhase0ReviewSignal,
 } from "./phase0-heuristics";
 import type {
-  Phase0Confidence,
   Phase0DraftStatus,
   Phase0JudgementDraft,
   Phase0MessyRecord,
@@ -32,12 +31,6 @@ const kindOptions: Array<{ value: Phase0PossibleKind; label: string }> = [
   { value: "task_candidate", label: "任務候選" },
   { value: "assignment_candidate", label: "人員指派候選" },
   { value: "announcement_candidate", label: "公告候選" },
-];
-
-const confidenceOptions: Array<{ value: Phase0Confidence; label: string }> = [
-  { value: "low", label: "低" },
-  { value: "medium", label: "中" },
-  { value: "high", label: "高" },
 ];
 
 const draftStatusOptions: Array<{ value: Phase0DraftStatus; label: string }> = [
@@ -81,13 +74,6 @@ function createInitialDrafts(records: Phase0MessyRecord[]) {
       createPhase0EditableDraft(record),
     ]),
   );
-}
-
-function textToLines(value: string) {
-  return value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
 }
 
 function needsHumanReview(record: Phase0MessyRecord) {
@@ -358,7 +344,7 @@ export function Phase0Workbench({
               <section className="draft-section">
                 <div className="draft-section__title">
                   <span>1</span>
-                  <h4>先判斷它可能是什麼</h4>
+                  <h4>快速整理</h4>
                 </div>
                 <div className="draft-editor__grid">
                   <label>
@@ -399,24 +385,6 @@ export function Phase0Workbench({
                   </label>
 
                   <label>
-                    信心程度
-                    <select
-                      value={selectedDraft.confidence}
-                      onChange={(event) =>
-                        updateSelectedDraft({
-                          confidence: event.target.value as Phase0Confidence,
-                        })
-                      }
-                    >
-                      {confidenceOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label>
                     建議下一步
                     <select
                       value={selectedDraft.suggestedNextStep}
@@ -435,58 +403,28 @@ export function Phase0Workbench({
                     </select>
                   </label>
                 </div>
-              </section>
 
-              <label className="draft-editor__checkbox">
-                <input
-                  type="checkbox"
-                  checked={selectedDraft.unsafeToActDirectly}
-                  onChange={(event) =>
-                    updateSelectedDraft({
-                      unsafeToActDirectly: event.target.checked,
-                    })
-                  }
-                />
-                不能直接變成任務或行動
-              </label>
+                <label className="draft-editor__checkbox">
+                  <input
+                    type="checkbox"
+                    checked={selectedDraft.unsafeToActDirectly}
+                    onChange={(event) =>
+                      updateSelectedDraft({
+                        unsafeToActDirectly: event.target.checked,
+                      })
+                    }
+                  />
+                  不能直接變成任務或行動
+                </label>
+              </section>
 
               <section className="draft-section">
                 <div className="draft-section__title">
                   <span>2</span>
-                  <h4>寫下依據與卡住原因</h4>
+                  <h4>人工確認筆記</h4>
                 </div>
                 <label>
-                  原文依據
-                  <textarea
-                    value={selectedDraft.evidence.join("\n")}
-                    onChange={(event) =>
-                      updateSelectedDraft({
-                        evidence: textToLines(event.target.value),
-                      })
-                    }
-                  />
-                </label>
-
-                <label>
-                  卡住原因
-                  <textarea
-                    value={selectedDraft.blockers.join("\n")}
-                    onChange={(event) =>
-                      updateSelectedDraft({
-                        blockers: textToLines(event.target.value),
-                      })
-                    }
-                  />
-                </label>
-              </section>
-
-              <section className="draft-section">
-                <div className="draft-section__title">
-                  <span>3</span>
-                  <h4>留下人工確認筆記</h4>
-                </div>
-                <label>
-                  人工確認筆記
+                  筆記
                   <textarea
                     value={selectedDraft.humanReviewNote ?? ""}
                     onChange={(event) =>
@@ -496,6 +434,20 @@ export function Phase0Workbench({
                     }
                   />
                 </label>
+              </section>
+
+              <section className="draft-section draft-section--compact">
+                <div className="draft-section__title">
+                  <span>!</span>
+                  <h4>自動保留的安全提醒</h4>
+                </div>
+                <ul className="draft-summary-list">
+                  {[...selectedDraft.evidence, ...selectedDraft.blockers].map(
+                    (item) => (
+                      <li key={item}>{item}</li>
+                    ),
+                  )}
+                </ul>
               </section>
 
               {selectedNeedsReview ? (

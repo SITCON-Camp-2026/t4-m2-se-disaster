@@ -36,6 +36,7 @@
 | 2026-07-09 | Phase 0 | 標示 AI 優先確認候選 | 建議用 mock 原文完整度與限制語句評分，將候選小卡標紅                                       | 部分採用    | 只標示為「AI 候選：優先人工確認」，不採用「最緊急」作為真實救災判斷                | `src/features/phase-0/phase0-heuristics.ts`, `src/features/phase-0/Phase0Workbench.tsx`, `src/features/phase-0/Phase0RawInfoPanel.tsx` |
 | 2026-07-09 | Phase 0 | 重新檢視按鈕與顏色   | 建議按高 / 中 / 低人工確認等級套色，並讓草稿狀態可由使用者更新                             | 採用        | 顏色只表示 AI 候選人工確認等級，不表示真實緊急派工；草稿狀態維持可編輯             | `src/features/phase-0/phase0-types.ts`, `src/features/phase-0/phase0-heuristics.ts`, `src/features/phase-0/Phase0Workbench.tsx`        |
 | 2026-07-09 | Phase 0 | 增加背景與儲存狀態   | 建議使用抽象城市背景，並新增草稿儲存按鈕與已儲存 / 未儲存標籤                              | 採用        | 背景不使用真實城市或地圖；儲存只保留在前端記憶體，不使用 localStorage 或後端       | `src/features/phase-0/Phase0Workbench.tsx`, `src/styles/global.css`, `tests/app-smoke.test.tsx`                                        |
+| 2026-07-09 | Phase 0 | 簡化草稿編輯區       | 建議移除信心程度與長篇依據編輯，保留狀態、候選類型、下一步、不能直接行動與筆記             | 採用        | 降低操作負擔，同時保留 Phase 0 需要人工確認與不能直接變任務的安全標示              | `src/features/phase-0/Phase0Workbench.tsx`, `src/styles/global.css`, `tests/app-smoke.test.tsx`                                        |
 
 ## 範例
 

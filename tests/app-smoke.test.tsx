@@ -82,6 +82,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText("候選類型")).toBeInTheDocument();
     expect(screen.getByLabelText("草稿狀態")).toHaveValue("needs_human_review");
+    expect(screen.queryByLabelText("信心程度")).not.toBeInTheDocument();
     expect(screen.getByText("未儲存變更")).toBeInTheDocument();
     expect(screen.getByLabelText("不能直接變成任務或行動")).toBeChecked();
     expect(screen.queryByText("不可直接派工")).not.toBeInTheDocument();
