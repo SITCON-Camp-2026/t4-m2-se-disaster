@@ -29,9 +29,14 @@ const unverifiedRecordCount = phase0Records.filter(
 ).length;
 
 export function App() {
-  const isV1Route =
-    window.location.pathname.replace(/\/+$/, "") === "/v1" ||
-    window.location.pathname === "/v1/";
+  const baseUrl = import.meta.env.BASE_URL;
+  const normalizedBasePath = baseUrl.replace(/\/+$/, "");
+  const normalizedPath = window.location.pathname.replace(/\/+$/, "");
+  const appPath =
+    normalizedBasePath && normalizedPath.startsWith(normalizedBasePath)
+      ? normalizedPath.slice(normalizedBasePath.length) || "/"
+      : normalizedPath || "/";
+  const isV1Route = appPath === "/v1";
   const [activeTab, setActiveTab] = useState<TabKey>(
     isV1Route ? "workbench" : "raw",
   );
@@ -66,11 +71,11 @@ export function App() {
               : "先看原始資訊，再建立整理筆記；所有未確認內容都維持待人工確認。"}
           </p>
           {isV1Route ? (
-            <a className="hero__link" href="/">
+            <a className="hero__link" href={baseUrl}>
               回到 Phase 0
             </a>
           ) : (
-            <a className="hero__link" href="/v1/">
+            <a className="hero__link" href={`${baseUrl}v1/`}>
               進入 v1 行動者工作台
             </a>
           )}

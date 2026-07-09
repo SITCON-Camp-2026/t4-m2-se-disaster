@@ -12,7 +12,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && tsx scripts/create-static-routes.ts",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
