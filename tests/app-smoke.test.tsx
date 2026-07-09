@@ -76,10 +76,10 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "2 整理工作台" }));
 
-    expect(screen.getByText("可編輯整理草稿")).toBeInTheDocument();
+    expect(screen.getByText("可編輯整理筆記")).toBeInTheDocument();
     expect(screen.getByText(/已建立/)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /草稿\s*6/ }),
+      screen.getByRole("button", { name: /整理筆記\s*6/ }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /不能直接行動\s*6/ }),
@@ -87,10 +87,10 @@ describe("App", () => {
     expect(
       screen.getByRole("button", { name: /需要人工確認\s*6/ }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("候選類型")).toBeInTheDocument();
-    expect(screen.getByLabelText("草稿狀態")).toHaveValue("needs_human_review");
+    expect(screen.getByLabelText("原文可能涉及")).toBeInTheDocument();
+    expect(screen.getByLabelText("整理狀態")).toHaveValue("needs_human_review");
     expect(screen.queryByLabelText("信心程度")).not.toBeInTheDocument();
-    expect(screen.getByText("未暫存變更")).toBeInTheDocument();
+    expect(screen.getByText("未保存變更")).toBeInTheDocument();
     expect(screen.getByText("目前只能閱讀與等待確認")).toBeInTheDocument();
     expect(screen.getByText(/行動者不能出發/)).toBeInTheDocument();
     expect(screen.getByText("流程停在：閱讀與等待確認")).toBeInTheDocument();
@@ -100,16 +100,19 @@ describe("App", () => {
     expect(screen.getAllByText("查核狀態不是已確認").length).toBeGreaterThan(0);
     expect(screen.getByLabelText("不能直接變成任務或行動")).toBeChecked();
     expect(
-      screen.getByText(/通報線索或地點更新線索都不是正式任務/),
+      screen.getByText(/待查通報線索或待查地點線索都不是正式任務/),
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText("筆記：請寫下為什麼需要確認"),
     ).toBeInTheDocument();
     expect(screen.getByText("本筆需要確認的原因")).toBeInTheDocument();
-    expect(screen.getByText("記下通報線索")).toBeInTheDocument();
-    expect(screen.getByText("記下地點更新線索")).toBeInTheDocument();
+    expect(screen.getByText("加入待查通報線索")).toBeInTheDocument();
+    expect(screen.getByText("加入待查地點線索")).toBeInTheDocument();
     expect(screen.queryByText("建立候選通報")).not.toBeInTheDocument();
     expect(screen.queryByText("建立地點更新建議")).not.toBeInTheDocument();
+    expect(screen.queryByText("建議下一步")).not.toBeInTheDocument();
+    expect(screen.queryByText("候選類型")).not.toBeInTheDocument();
+    expect(screen.queryByText("暫存草稿")).not.toBeInTheDocument();
     expect(screen.queryByText("不可直接派工")).not.toBeInTheDocument();
     expect(
       screen.getByText(/AI 提醒：看似急迫，仍待人工確認/),
@@ -117,34 +120,35 @@ describe("App", () => {
     expect(screen.queryByText(/最高優先/)).not.toBeInTheDocument();
     expect(screen.queryByText(/資料缺口較多/)).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("草稿狀態"), {
+    fireEvent.change(screen.getByLabelText("整理狀態"), {
       target: { value: "human_reviewed" },
     });
 
-    expect(screen.getByLabelText("草稿狀態")).toHaveValue("human_reviewed");
+    expect(screen.getByLabelText("整理狀態")).toHaveValue("human_reviewed");
     expect(
-      screen.getByText(/草稿狀態：仍待確認：已初步查看/),
+      screen.getByText(/整理狀態：仍待確認：僅已閱讀原文，尚未查證/),
     ).toBeInTheDocument();
     expect(screen.queryByText(/人工已看過/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/已初步查看/)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "暫存草稿" }));
+    fireEvent.click(screen.getByRole("button", { name: "保存整理筆記" }));
 
-    expect(screen.getAllByText("已暫存").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("已保存筆記").length).toBeGreaterThan(0);
 
-    fireEvent.change(screen.getByLabelText("草稿狀態"), {
+    fireEvent.change(screen.getByLabelText("整理狀態"), {
       target: { value: "do_not_use" },
     });
 
-    expect(screen.getByText("未暫存變更")).toBeInTheDocument();
+    expect(screen.getByText("未保存變更")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /不能直接行動\s*6/ }));
 
     expect(screen.getByText(/目前篩選：不能直接行動/)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "刪除這筆草稿" }),
+      screen.getByRole("button", { name: "刪除這筆筆記" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "重設全部草稿" }),
+      screen.getByRole("button", { name: "重設全部筆記" }),
     ).toBeInTheDocument();
   });
 
@@ -152,13 +156,13 @@ describe("App", () => {
     render(<App />);
 
     fireEvent.click(screen.getByRole("button", { name: "2 整理工作台" }));
-    fireEvent.click(screen.getByRole("button", { name: "刪除這筆草稿" }));
+    fireEvent.click(screen.getByRole("button", { name: "刪除這筆筆記" }));
 
-    expect(screen.getByText("M-001 還沒有整理草稿")).toBeInTheDocument();
+    expect(screen.getByText("M-001 還沒有整理筆記")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "建立整理草稿" }));
+    fireEvent.click(screen.getByRole("button", { name: "建立整理筆記" }));
 
-    expect(screen.getByText("M-001 候選判斷")).toBeInTheDocument();
+    expect(screen.getByText("M-001 閱讀判斷筆記")).toBeInTheDocument();
   });
 
   it("serves the flow-based actor workbench at /v1/", () => {
@@ -177,7 +181,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("流程停在：閱讀與等待確認")).toBeInTheDocument();
     expect(
-      screen.getByText(/通報線索或地點更新線索都不是正式任務/),
+      screen.getByText(/待查通報線索或待查地點線索都不是正式任務/),
     ).toBeInTheDocument();
   });
 });

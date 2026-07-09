@@ -19,24 +19,27 @@ import type {
 type WorkbenchSummaryFilter = "drafts" | "unsafe" | "review";
 
 const summaryFilterLabels: Record<WorkbenchSummaryFilter, string> = {
-  drafts: "草稿",
+  drafts: "整理筆記",
   unsafe: "不能直接行動",
   review: "需要人工確認",
 };
 
 const kindOptions: Array<{ value: Phase0PossibleKind; label: string }> = [
-  { value: "unknown", label: "候選類型待判斷" },
-  { value: "help_request_candidate", label: "求助線索" },
-  { value: "site_status_candidate", label: "地點狀態線索" },
-  { value: "task_candidate", label: "任務樣貌線索" },
-  { value: "assignment_candidate", label: "人員指派線索" },
-  { value: "announcement_candidate", label: "公告線索" },
+  { value: "unknown", label: "原文可能涉及：待判斷" },
+  { value: "help_request_candidate", label: "原文可能涉及求助" },
+  { value: "site_status_candidate", label: "原文可能涉及地點狀態" },
+  { value: "task_candidate", label: "原文可能涉及任務樣貌" },
+  { value: "assignment_candidate", label: "原文可能涉及人員安排" },
+  { value: "announcement_candidate", label: "原文可能涉及公告" },
 ];
 
 const draftStatusOptions: Array<{ value: Phase0DraftStatus; label: string }> = [
-  { value: "draft", label: "草稿" },
+  { value: "draft", label: "整理中" },
   { value: "needs_human_review", label: "待人工確認" },
-  { value: "human_reviewed", label: "仍待確認：已初步查看" },
+  {
+    value: "human_reviewed",
+    label: "仍待確認：僅已閱讀原文，尚未查證",
+  },
   { value: "do_not_use", label: "暫不使用" },
 ];
 
@@ -49,10 +52,10 @@ const nextStepOptions: Array<{
   label: string;
 }> = [
   { value: "keep_raw", label: "先保留原始資訊" },
-  { value: "ask_for_more_info", label: "補問來源或現場資訊" },
-  { value: "send_to_human_review", label: "交給人工確認" },
-  { value: "create_candidate_report", label: "記下通報線索" },
-  { value: "create_site_update_suggestion", label: "記下地點更新線索" },
+  { value: "ask_for_more_info", label: "確認方向：補問來源或現場資訊" },
+  { value: "send_to_human_review", label: "確認方向：交由具權限人員查核" },
+  { value: "create_candidate_report", label: "加入待查通報線索" },
+  { value: "create_site_update_suggestion", label: "加入待查地點線索" },
   { value: "do_not_use_yet", label: "暫時不要使用" },
 ];
 
@@ -100,7 +103,7 @@ function getActionBoundary(
   if (draft?.unsafeToActDirectly || needsHumanReview(record)) {
     return {
       title: "目前只能閱讀與等待確認",
-      detail: "看似急迫或已暫存都不是已確認；行動者不能出發。",
+      detail: "看似急迫或已保存都不是已確認；行動者不能出發。",
     };
   }
 
@@ -138,15 +141,15 @@ function getConfirmationReasons(
   }
 
   if (draft?.unsafeToActDirectly) {
-    reasons.add("草稿仍標示不能直接變成任務或行動");
+    reasons.add("整理筆記仍標示不能直接變成任務或行動");
   }
 
   if (draft?.suggestedNextStep === "create_candidate_report") {
-    reasons.add("通報線索不是正式通報流程");
+    reasons.add("待查通報線索不是正式通報");
   }
 
   if (draft?.suggestedNextStep === "create_site_update_suggestion") {
-    reasons.add("地點更新線索不是正式任務流程");
+    reasons.add("待查地點線索不是正式任務");
   }
 
   if (draft?.humanReviewNote?.trim()) {
@@ -327,13 +330,13 @@ export function Phase0Workbench({
             第一階段的成功不是分類正確，而是把為什麼現在還不能判斷說清楚。
           </h2>
         </div>
-        <div className="workbench__summary" aria-label="整理草稿摘要">
+        <div className="workbench__summary" aria-label="整理筆記摘要">
           <button
             className={summaryFilter === "drafts" ? "active" : ""}
             type="button"
             onClick={() => showSummaryCategory("drafts")}
           >
-            <span>草稿</span>
+            <span>整理筆記</span>
             <strong>{draftCount}</strong>
           </button>
           <button
@@ -382,10 +385,12 @@ export function Phase0Workbench({
                 </span>
                 <span className="queue-item__meta">
                   {draft
-                    ? `草稿狀態：${draftStatusLabels[draft.draftStatus]}`
-                    : "尚未建草稿"}{" "}
+                    ? `整理狀態：${draftStatusLabels[draft.draftStatus]}`
+                    : "尚未記錄"}{" "}
                   ·{" "}
-                  {draft && savedDraftIds.has(record.id) ? "已暫存" : "未暫存"}{" "}
+                  {draft && savedDraftIds.has(record.id)
+                    ? "已保存筆記"
+                    : "未保存筆記"}{" "}
                   · {needsHumanReview(record) ? "需人工確認" : "可先保留"}
                 </span>
                 <span
@@ -441,20 +446,20 @@ export function Phase0Workbench({
             <article className="draft-editor">
               <div className="draft-editor__header">
                 <div>
-                  <p className="eyebrow">可編輯整理草稿</p>
-                  <h3>{selectedRecord.id} 候選判斷</h3>
+                  <p className="eyebrow">可編輯整理筆記</p>
+                  <h3>{selectedRecord.id} 閱讀判斷筆記</h3>
                 </div>
                 <span
                   className={`save-badge ${
                     selectedDraftIsSaved ? "save-badge--saved" : ""
                   }`}
                 >
-                  {selectedDraftIsSaved ? "已暫存" : "未暫存變更"}
+                  {selectedDraftIsSaved ? "已保存筆記" : "未保存變更"}
                 </span>
               </div>
 
               <p>
-                這是小組可修改的候選整理，不是已確認事實。所有欄位都應回到原文找依據，不能直接變成志工任務。
+                這是小組可修改的閱讀筆記，不是已確認事實。所有欄位都應回到原文找依據，不能直接變成志工任務。
               </p>
 
               <section className="draft-section">
@@ -464,7 +469,7 @@ export function Phase0Workbench({
                 </div>
                 <div className="draft-editor__grid">
                   <label>
-                    草稿狀態
+                    整理狀態
                     <select
                       value={selectedDraft.draftStatus}
                       onChange={(event) =>
@@ -482,7 +487,7 @@ export function Phase0Workbench({
                   </label>
 
                   <label>
-                    候選類型
+                    原文可能涉及
                     <select
                       value={selectedDraft.possibleKind}
                       onChange={(event) =>
@@ -501,7 +506,7 @@ export function Phase0Workbench({
                   </label>
 
                   <label>
-                    建議下一步
+                    確認方向
                     <select
                       value={selectedDraft.suggestedNextStep}
                       onChange={(event) =>
@@ -534,7 +539,7 @@ export function Phase0Workbench({
                 </label>
 
                 <p className="draft-editor__note">
-                  目前輸出只能是原文、線索、人工確認原因與不可行動邊界；通報線索或地點更新線索都不是正式任務。
+                  目前輸出只能是原文、待查線索、人工確認原因與不可行動邊界；待查通報線索或待查地點線索都不是正式任務。
                 </p>
               </section>
 
@@ -591,16 +596,16 @@ export function Phase0Workbench({
 
               <div className="draft-editor__actions">
                 <button type="button" onClick={saveSelectedDraft}>
-                  暫存草稿
+                  保存整理筆記
                 </button>
                 <button
                   type="button"
                   onClick={() => upsertDraft(selectedRecord)}
                 >
-                  重設這筆草稿
+                  重設這筆筆記
                 </button>
                 <button type="button" onClick={deleteSelectedDraft}>
-                  刪除這筆草稿
+                  刪除這筆筆記
                 </button>
               </div>
             </article>
@@ -608,15 +613,15 @@ export function Phase0Workbench({
             <article className="draft-editor">
               <div className="draft-editor__header">
                 <div>
-                  <p className="eyebrow">尚未建立草稿</p>
-                  <h3>{selectedRecord.id} 還沒有整理草稿</h3>
+                  <p className="eyebrow">尚未建立筆記</p>
+                  <h3>{selectedRecord.id} 還沒有整理筆記</h3>
                 </div>
               </div>
               <p>
-                可以先保留原始資訊，也可以建立一張保守草稿，再由小組人工修正。
+                可以先保留原始資訊，也可以建立一份保守閱讀筆記，再由小組人工修正。
               </p>
               <button type="button" onClick={() => upsertDraft(selectedRecord)}>
-                建立整理草稿
+                建立整理筆記
               </button>
             </article>
           )}
@@ -628,13 +633,13 @@ export function Phase0Workbench({
         </div>
 
         <aside className="workbench__checklist">
-          <h3>本頁進度</h3>
+          <h3>人工確認門檻</h3>
           <ul>
             <li>
               已載入 <strong>{records.length}</strong> 筆原始資訊
             </li>
             <li>
-              已建立 <strong>{draftCount}</strong> 筆可編輯草稿
+              已建立 <strong>{draftCount}</strong> 筆閱讀筆記
             </li>
             <li>
               <strong>{unsafeDraftCount}</strong> 筆標示不能直接變成任務
@@ -642,7 +647,7 @@ export function Phase0Workbench({
             <li>
               <strong>{reviewDraftCount}</strong> 筆需要人工確認或補問來源
             </li>
-            <li>請挑至少 2 個候選判斷由人類質疑或修正</li>
+            <li>請挑至少 2 個閱讀判斷由人類質疑或修正</li>
           </ul>
           <button
             type="button"
@@ -651,7 +656,7 @@ export function Phase0Workbench({
               setSavedDraftIds(new Set());
             }}
           >
-            重設全部草稿
+            重設全部筆記
           </button>
         </aside>
       </div>

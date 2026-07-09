@@ -2,12 +2,12 @@ import { StatusBadge } from "../../components/StatusBadge";
 import type { Phase0JudgementDraft, Phase0MessyRecord } from "./phase0-types";
 
 const kindLabels: Record<Phase0JudgementDraft["possibleKind"], string> = {
-  help_request_candidate: "求助線索",
-  site_status_candidate: "地點狀態線索",
-  task_candidate: "任務樣貌線索",
-  assignment_candidate: "人員指派線索",
-  announcement_candidate: "公告線索",
-  unknown: "候選類型待判斷",
+  help_request_candidate: "原文可能涉及求助",
+  site_status_candidate: "原文可能涉及地點狀態",
+  task_candidate: "原文可能涉及任務樣貌",
+  assignment_candidate: "原文可能涉及人員安排",
+  announcement_candidate: "原文可能涉及公告",
+  unknown: "原文可能涉及：待判斷",
 };
 
 const confidenceLabels: Record<Phase0JudgementDraft["confidence"], string> = {
@@ -21,10 +21,10 @@ const nextStepLabels: Record<
   string
 > = {
   keep_raw: "先保留原始資訊",
-  ask_for_more_info: "補問來源或現場資訊",
-  send_to_human_review: "交給人工確認",
-  create_candidate_report: "記下通報線索",
-  create_site_update_suggestion: "記下地點更新線索",
+  ask_for_more_info: "確認方向：補問來源或現場資訊",
+  send_to_human_review: "確認方向：交由具權限人員查核",
+  create_candidate_report: "加入待查通報線索",
+  create_site_update_suggestion: "加入待查地點線索",
   do_not_use_yet: "暫時不要使用",
 };
 
@@ -40,19 +40,19 @@ export function Phase0JudgementCard({
       <div className="judgement-card__header">
         <div>
           <p className="eyebrow">Starter 安全預設</p>
-          <h3>尚未建立整理草稿</h3>
+          <h3>尚未建立整理筆記</h3>
         </div>
         <StatusBadge status={record.verificationStatus} />
       </div>
 
       <p>
         這張卡只保留保守的安全邊界，不是 agent 對這筆資料的整理答案。請讓 coding
-        agent 實作可建立、編輯與刪除的整理草稿。
+        agent 實作可建立、編輯與刪除的整理筆記。
       </p>
 
       <dl className="judgement-summary">
         <div>
-          <dt>候選類型</dt>
+          <dt>原文可能涉及</dt>
           <dd>{kindLabels[judgement.possibleKind]}</dd>
         </div>
         <div>
@@ -60,7 +60,7 @@ export function Phase0JudgementCard({
           <dd>{confidenceLabels[judgement.confidence]}</dd>
         </div>
         <div>
-          <dt>下一步</dt>
+          <dt>確認方向</dt>
           <dd>{nextStepLabels[judgement.suggestedNextStep]}</dd>
         </div>
       </dl>

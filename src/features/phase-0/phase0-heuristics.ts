@@ -13,9 +13,9 @@ export function createPhase0Judgement(
     messyRecordId: record.id,
     possibleKind: "unknown",
     confidence: "low",
-    evidence: ["尚未建立整理草稿：請由小組從原文標出判斷依據。"],
+    evidence: ["尚未建立整理筆記：請由小組從原文標出判斷依據。"],
     blockers: isVerified
-      ? ["仍需確認這筆資訊適合進入哪個後續流程。"]
+      ? ["仍需確認這筆資訊適合交由誰做後續確認。"]
       : ["目前不是已確認資訊，不能直接行動或當成事實發布。"],
     suggestedNextStep: isVerified ? "keep_raw" : "send_to_human_review",
     unsafeToActDirectly: true,
@@ -49,12 +49,12 @@ export function createPhase0EditableDraft(
     confidence: hasConcreteUpdate && !hasConflict ? "medium" : "low",
     evidence: [
       hasConcreteUpdate
-        ? "原文包含較具體的時間、數量或現場更新，可先作為候選整理。"
-        : "原文資訊不足，先保留為待判斷草稿。",
+        ? "原文包含較具體的時間、數量或現場更新，可先作為閱讀筆記。"
+        : "原文資訊不足，先保留為待判斷筆記。",
     ],
     blockers: [
       record.verificationStatus === "verified"
-        ? "即使來源較完整，仍需確認是否能進入後續流程。"
+        ? "即使來源較完整，仍需確認是否能交由具權限人員處理。"
         : "查核狀態不是已確認，不能直接當成事實或行動依據。",
       hasProxyOperator
         ? "操作者或轉述者可能不是當事人，需要確認同意、位置或現況。"
@@ -67,7 +67,7 @@ export function createPhase0EditableDraft(
     draftStatus: "needs_human_review",
     humanReviewNote: hasProxyOperator
       ? "先確認轉述者、當事人同意與現場狀況，不要直接派任務。"
-      : "請小組對照原文確認這只是候選整理。",
+      : "請小組對照原文確認這只是閱讀筆記。",
   };
 }
 

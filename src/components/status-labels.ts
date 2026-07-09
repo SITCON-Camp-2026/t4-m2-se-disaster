@@ -8,7 +8,7 @@ export const statusLabels: Record<string, string> = {
   reported_closed: "有人回報關閉",
   verified_open: "確認開放",
   verified_closed: "確認關閉",
-  draft: "草稿",
+  draft: "整理中",
   open: "可處理",
   matching: "媒合中",
   assigned: "已指派",

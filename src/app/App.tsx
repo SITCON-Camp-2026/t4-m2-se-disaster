@@ -63,7 +63,7 @@ export function App() {
           <p>
             {isV1Route
               ? "依 docs/flow.md 實作：行動者先確認資訊停在哪裡，避免把未確認線索誤當成可行動任務。"
-              : "先看原始資訊，再建立候選草稿；所有未確認內容都維持待人工確認。"}
+              : "先看原始資訊，再建立整理筆記；所有未確認內容都維持待人工確認。"}
           </p>
           {isV1Route ? (
             <a className="hero__link" href="/">
