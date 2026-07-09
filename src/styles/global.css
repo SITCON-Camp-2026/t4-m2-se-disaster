@@ -566,6 +566,23 @@ textarea:focus-visible {
   color: #8a5a00;
 }
 
+.action-boundary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border: 1px solid #f0c36d;
+  border-left: 3px solid #b7791f;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff8e6;
+  color: #442c00;
+  font-size: 0.92rem;
+}
+
+.action-boundary strong {
+  flex: 0 0 auto;
+}
+
 .save-badge {
   display: inline-flex;
   align-items: center;

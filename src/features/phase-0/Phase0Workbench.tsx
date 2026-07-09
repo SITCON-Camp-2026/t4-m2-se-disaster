@@ -26,17 +26,17 @@ const summaryFilterLabels: Record<WorkbenchSummaryFilter, string> = {
 
 const kindOptions: Array<{ value: Phase0PossibleKind; label: string }> = [
   { value: "unknown", label: "候選類型待判斷" },
-  { value: "help_request_candidate", label: "求助候選" },
-  { value: "site_status_candidate", label: "地點狀態候選" },
-  { value: "task_candidate", label: "任務候選" },
-  { value: "assignment_candidate", label: "人員指派候選" },
-  { value: "announcement_candidate", label: "公告候選" },
+  { value: "help_request_candidate", label: "求助線索" },
+  { value: "site_status_candidate", label: "地點狀態線索" },
+  { value: "task_candidate", label: "任務樣貌線索" },
+  { value: "assignment_candidate", label: "人員指派線索" },
+  { value: "announcement_candidate", label: "公告線索" },
 ];
 
 const draftStatusOptions: Array<{ value: Phase0DraftStatus; label: string }> = [
   { value: "draft", label: "草稿" },
   { value: "needs_human_review", label: "待人工確認" },
-  { value: "human_reviewed", label: "人工已看過" },
+  { value: "human_reviewed", label: "仍待確認：已初步查看" },
   { value: "do_not_use", label: "暫不使用" },
 ];
 
@@ -51,8 +51,8 @@ const nextStepOptions: Array<{
   { value: "keep_raw", label: "先保留原始資訊" },
   { value: "ask_for_more_info", label: "補問來源或現場資訊" },
   { value: "send_to_human_review", label: "交給人工確認" },
-  { value: "create_candidate_report", label: "建立候選通報" },
-  { value: "create_site_update_suggestion", label: "建立地點更新建議" },
+  { value: "create_candidate_report", label: "記下通報線索" },
+  { value: "create_site_update_suggestion", label: "記下地點更新線索" },
   { value: "do_not_use_yet", label: "暫時不要使用" },
 ];
 
@@ -86,6 +86,30 @@ function needsHumanReview(record: Phase0MessyRecord) {
   );
 }
 
+function getActionBoundary(
+  record: Phase0MessyRecord,
+  draft?: Phase0JudgementDraft,
+) {
+  if (draft?.draftStatus === "do_not_use") {
+    return {
+      title: "目前只能保留紀錄",
+      detail: "不能作為準備、出發或派工依據。",
+    };
+  }
+
+  if (draft?.unsafeToActDirectly || needsHumanReview(record)) {
+    return {
+      title: "目前只能閱讀與等待確認",
+      detail: "看似急迫或已暫存都不是已確認；行動者不能出發。",
+    };
+  }
+
+  return {
+    title: "目前仍不可自行行動",
+    detail: "進入正式流程前，仍需確認來源、現場、同意與責任角色。",
+  };
+}
+
 export function Phase0Workbench({
   records,
   selectedRecordId,
@@ -117,6 +141,7 @@ export function Phase0Workbench({
   }).length;
   const selectedNeedsReview = needsHumanReview(selectedRecord);
   const selectedDraftIsSaved = savedDraftIds.has(selectedRecord.id);
+  const actionBoundary = getActionBoundary(selectedRecord, selectedDraft);
   const visibleQueueRecords = records.filter((record) => {
     const draft = drafts[record.id];
 
@@ -259,8 +284,8 @@ export function Phase0Workbench({
           </button>
         </div>
         <p className="workbench__filter-note">
-          目前篩選：{summaryFilterLabels[summaryFilter]}。紅色小卡是 AI
-          候選的優先人工確認項目，不代表已確認或可直接派工。
+          目前篩選：{summaryFilterLabels[summaryFilter]}
+          。紅色小卡表示原文看似急迫或資訊較完整，不代表已確認、真實緊急或可直接派工。
         </p>
       </div>
 
@@ -290,14 +315,14 @@ export function Phase0Workbench({
                     ? `草稿狀態：${draftStatusLabels[draft.draftStatus]}`
                     : "尚未建草稿"}{" "}
                   ·{" "}
-                  {draft && savedDraftIds.has(record.id) ? "已儲存" : "未儲存"}{" "}
+                  {draft && savedDraftIds.has(record.id) ? "已暫存" : "未暫存"}{" "}
                   · {needsHumanReview(record) ? "需人工確認" : "可先保留"}
                 </span>
                 <span
                   className={`priority-badge priority-badge--${reviewSignal.level}`}
                 >
                   {record.id === priorityCandidateId
-                    ? "AI 候選：最高優先人工確認"
+                    ? "AI 提醒：看似急迫，仍待人工確認"
                     : reviewSignal.label}
                 </span>
               </button>
@@ -321,6 +346,11 @@ export function Phase0Workbench({
 
           <RecordCard record={selectedRecord} />
 
+          <section className="action-boundary" aria-label="目前行動邊界">
+            <strong>{actionBoundary.title}</strong>
+            <span>{actionBoundary.detail}</span>
+          </section>
+
           {selectedDraft ? (
             <article className="draft-editor">
               <div className="draft-editor__header">
@@ -333,7 +363,7 @@ export function Phase0Workbench({
                     selectedDraftIsSaved ? "save-badge--saved" : ""
                   }`}
                 >
-                  {selectedDraftIsSaved ? "已儲存" : "未儲存變更"}
+                  {selectedDraftIsSaved ? "已暫存" : "未暫存變更"}
                 </span>
               </div>
 
@@ -424,8 +454,9 @@ export function Phase0Workbench({
                   <h4>人工確認筆記</h4>
                 </div>
                 <label>
-                  筆記
+                  筆記：請寫下為什麼需要確認
                   <textarea
+                    placeholder="例如：缺來源、缺時間、缺當事人同意、AI 有推測、原文互相矛盾。"
                     value={selectedDraft.humanReviewNote ?? ""}
                     onChange={(event) =>
                       updateSelectedDraft({
@@ -458,7 +489,7 @@ export function Phase0Workbench({
 
               <div className="draft-editor__actions">
                 <button type="button" onClick={saveSelectedDraft}>
-                  儲存草稿
+                  暫存草稿
                 </button>
                 <button
                   type="button"

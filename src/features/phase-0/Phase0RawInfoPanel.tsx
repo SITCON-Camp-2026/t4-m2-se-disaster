@@ -81,7 +81,7 @@ export function Phase0RawInfoPanel({
                   className={`priority-note priority-note--${reviewSignal.level}`}
                 >
                   {isPriorityCandidate
-                    ? "AI 候選：最高優先人工確認。"
+                    ? "AI 提醒：看似急迫，仍待人工確認。"
                     : reviewSignal.label}
                 </p>
                 <p className="record-card__notice">不能直接當成任務或公告。</p>

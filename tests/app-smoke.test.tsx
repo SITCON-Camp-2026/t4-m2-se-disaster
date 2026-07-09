@@ -83,27 +83,43 @@ describe("App", () => {
     expect(screen.getByLabelText("候選類型")).toBeInTheDocument();
     expect(screen.getByLabelText("草稿狀態")).toHaveValue("needs_human_review");
     expect(screen.queryByLabelText("信心程度")).not.toBeInTheDocument();
-    expect(screen.getByText("未儲存變更")).toBeInTheDocument();
+    expect(screen.getByText("未暫存變更")).toBeInTheDocument();
+    expect(screen.getByText("目前只能閱讀與等待確認")).toBeInTheDocument();
+    expect(screen.getByText(/行動者不能出發/)).toBeInTheDocument();
     expect(screen.getByLabelText("不能直接變成任務或行動")).toBeChecked();
+    expect(
+      screen.getByLabelText("筆記：請寫下為什麼需要確認"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("記下通報線索")).toBeInTheDocument();
+    expect(screen.getByText("記下地點更新線索")).toBeInTheDocument();
+    expect(screen.queryByText("建立候選通報")).not.toBeInTheDocument();
+    expect(screen.queryByText("建立地點更新建議")).not.toBeInTheDocument();
     expect(screen.queryByText("不可直接派工")).not.toBeInTheDocument();
-    expect(screen.getByText(/AI 候選：最高優先人工確認/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/AI 提醒：看似急迫，仍待人工確認/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/最高優先/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/資料缺口較多/)).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("草稿狀態"), {
       target: { value: "human_reviewed" },
     });
 
     expect(screen.getByLabelText("草稿狀態")).toHaveValue("human_reviewed");
-    expect(screen.getByText(/草稿狀態：人工已看過/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/草稿狀態：仍待確認：已初步查看/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/人工已看過/)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "儲存草稿" }));
+    fireEvent.click(screen.getByRole("button", { name: "暫存草稿" }));
 
-    expect(screen.getAllByText("已儲存").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("已暫存").length).toBeGreaterThan(0);
 
     fireEvent.change(screen.getByLabelText("草稿狀態"), {
       target: { value: "do_not_use" },
     });
 
-    expect(screen.getByText("未儲存變更")).toBeInTheDocument();
+    expect(screen.getByText("未暫存變更")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /不能直接行動\s*6/ }));
 

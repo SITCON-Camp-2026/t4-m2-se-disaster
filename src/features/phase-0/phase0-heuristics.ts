@@ -95,14 +95,14 @@ export function getPhase0ReviewSignal(record: Phase0MessyRecord): {
   const score = scoreReviewSignal(record);
 
   if (score >= 6) {
-    return { level: "high", label: "AI 候選：高優先人工確認" };
+    return { level: "high", label: "AI 提醒：看似急迫，仍待人工確認" };
   }
 
   if (score >= 3) {
-    return { level: "medium", label: "AI 候選：中優先人工確認" };
+    return { level: "medium", label: "AI 提醒：資訊較完整，仍待人工確認" };
   }
 
-  return { level: "low", label: "AI 候選：一般人工確認" };
+  return { level: "low", label: "AI 提醒：保留人工確認" };
 }
 
 export function getPhase0PriorityReviewCandidateId(
