@@ -15,6 +15,11 @@ const tabs: Array<{ key: TabKey; label: string }> = [
   { key: "workbench", label: "2 整理工作台" },
 ];
 
+const v1Tabs: Array<{ key: TabKey; label: string }> = [
+  { key: "raw", label: "1 原始資訊" },
+  { key: "workbench", label: "2 行動者工作台" },
+];
+
 const phase0Records = messyReports satisfies Phase0MessyRecord[];
 const reviewRecordCount = phase0Records.filter(
   (record) => record.verificationStatus === "needs_review",
@@ -24,12 +29,18 @@ const unverifiedRecordCount = phase0Records.filter(
 ).length;
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<TabKey>("raw");
+  const isV1Route =
+    window.location.pathname.replace(/\/+$/, "") === "/v1" ||
+    window.location.pathname === "/v1/";
+  const [activeTab, setActiveTab] = useState<TabKey>(
+    isV1Route ? "workbench" : "raw",
+  );
   const [rawStatusFilter, setRawStatusFilter] =
     useState<Phase0RawStatusFilter>("all");
   const [selectedRecordId, setSelectedRecordId] = useState(
     phase0Records[0]?.id ?? "",
   );
+  const visibleTabs = isV1Route ? v1Tabs : tabs;
 
   function selectForWorkbench(recordId: string) {
     setSelectedRecordId(recordId);
@@ -45,9 +56,24 @@ export function App() {
     <main className="layout">
       <header className="hero">
         <div>
-          <p className="eyebrow">SITCON Camp 2026 / Phase 0</p>
-          <h1>災害資訊整理工作台</h1>
-          <p>先看原始資訊，再建立候選草稿；所有未確認內容都維持待人工確認。</p>
+          <p className="eyebrow">
+            SITCON Camp 2026 / {isV1Route ? "v1" : "Phase 0"}
+          </p>
+          <h1>{isV1Route ? "行動者線索工作台" : "災害資訊整理工作台"}</h1>
+          <p>
+            {isV1Route
+              ? "依 docs/flow.md 實作：行動者先確認資訊停在哪裡，避免把未確認線索誤當成可行動任務。"
+              : "先看原始資訊，再建立候選草稿；所有未確認內容都維持待人工確認。"}
+          </p>
+          {isV1Route ? (
+            <a className="hero__link" href="/">
+              回到 Phase 0
+            </a>
+          ) : (
+            <a className="hero__link" href="/v1/">
+              進入 v1 行動者工作台
+            </a>
+          )}
         </div>
         <div className="hero__stats" aria-label="原始資訊摘要">
           <button
@@ -77,8 +103,11 @@ export function App() {
         </div>
       </header>
 
-      <nav className="tabs" aria-label="第一階段工作區">
-        {tabs.map((tab) => (
+      <nav
+        className="tabs"
+        aria-label={isV1Route ? "v1 行動者工作區" : "第一階段工作區"}
+      >
+        {visibleTabs.map((tab) => (
           <button
             key={tab.key}
             className={activeTab === tab.key ? "active" : ""}

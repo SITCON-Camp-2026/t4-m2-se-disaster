@@ -125,6 +125,24 @@ textarea:focus-visible {
   line-height: 1.7;
 }
 
+.hero__link {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 8px;
+  border: 1px solid #245d9d;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #245d9d;
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.hero__link:hover {
+  background: #173f6c;
+}
+
 .hero__stats,
 .workbench__summary {
   display: grid;

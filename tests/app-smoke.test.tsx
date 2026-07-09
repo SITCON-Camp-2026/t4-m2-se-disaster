@@ -1,8 +1,12 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { App } from "../src/app/App";
 
 describe("App", () => {
+  beforeEach(() => {
+    window.history.pushState({}, "", "/");
+  });
+
   it("renders starter title", () => {
     render(<App />);
     expect(screen.getByText("災害資訊整理工作台")).toBeInTheDocument();
@@ -17,6 +21,9 @@ describe("App", () => {
     expect(
       screen.getByRole("button", { name: "2 整理工作台" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "進入 v1 行動者工作台" }),
+    ).toHaveAttribute("href", "/v1/");
     expect(
       screen.queryByRole("button", { name: "通報" }),
     ).not.toBeInTheDocument();
@@ -152,5 +159,25 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "建立整理草稿" }));
 
     expect(screen.getByText("M-001 候選判斷")).toBeInTheDocument();
+  });
+
+  it("serves the flow-based actor workbench at /v1/", () => {
+    window.history.pushState({}, "", "/v1/");
+
+    render(<App />);
+
+    expect(screen.getByText("行動者線索工作台")).toBeInTheDocument();
+    expect(screen.getByText(/依 docs\/flow\.md 實作/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "回到 Phase 0" })).toHaveAttribute(
+      "href",
+      "/",
+    );
+    expect(
+      screen.getByRole("button", { name: "2 行動者工作台" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("流程停在：閱讀與等待確認")).toBeInTheDocument();
+    expect(
+      screen.getByText(/通報線索或地點更新線索都不是正式任務/),
+    ).toBeInTheDocument();
   });
 });
