@@ -3,19 +3,30 @@ import messyReports from "../fixtures/phase-0/messy-reports.json";
 import { EmptyState } from "../components/EmptyState";
 import { Phase0RawInfoPanel } from "../features/phase-0/Phase0RawInfoPanel";
 import { Phase0Workbench } from "../features/phase-0/Phase0Workbench";
-import type { Phase0MessyRecord } from "../features/phase-0/phase0-types";
+import type {
+  Phase0MessyRecord,
+  Phase0RawStatusFilter,
+} from "../features/phase-0/phase0-types";
 
 type TabKey = "raw" | "workbench";
 
 const tabs: Array<{ key: TabKey; label: string }> = [
-  { key: "raw", label: "原始資訊" },
-  { key: "workbench", label: "整理工作台" },
+  { key: "raw", label: "1 原始資訊" },
+  { key: "workbench", label: "2 整理工作台" },
 ];
 
 const phase0Records = messyReports satisfies Phase0MessyRecord[];
+const reviewRecordCount = phase0Records.filter(
+  (record) => record.verificationStatus === "needs_review",
+).length;
+const unverifiedRecordCount = phase0Records.filter(
+  (record) => record.verificationStatus === "unverified",
+).length;
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabKey>("raw");
+  const [rawStatusFilter, setRawStatusFilter] =
+    useState<Phase0RawStatusFilter>("all");
   const [selectedRecordId, setSelectedRecordId] = useState(
     phase0Records[0]?.id ?? "",
   );
@@ -25,15 +36,45 @@ export function App() {
     setActiveTab("workbench");
   }
 
+  function showRawCategory(filter: Phase0RawStatusFilter) {
+    setRawStatusFilter(filter);
+    setActiveTab("raw");
+  }
+
   return (
     <main className="layout">
       <header className="hero">
-        <p className="eyebrow">SITCON Camp 2026</p>
-        <h1>災害資訊整理工作台</h1>
-        <p>
-          第一階段先用 coding agent
-          做出可展示的前端原型，再從成果中看見資料品質、角色、狀態與來源的限制。
-        </p>
+        <div>
+          <p className="eyebrow">SITCON Camp 2026 / Phase 0</p>
+          <h1>災害資訊整理工作台</h1>
+          <p>先看原始資訊，再建立候選草稿；所有未確認內容都維持待人工確認。</p>
+        </div>
+        <div className="hero__stats" aria-label="原始資訊摘要">
+          <button
+            className={rawStatusFilter === "all" ? "active" : ""}
+            type="button"
+            onClick={() => showRawCategory("all")}
+          >
+            <strong>{phase0Records.length}</strong>
+            <span>原始資訊</span>
+          </button>
+          <button
+            className={rawStatusFilter === "needs_review" ? "active" : ""}
+            type="button"
+            onClick={() => showRawCategory("needs_review")}
+          >
+            <strong>{reviewRecordCount}</strong>
+            <span>待人工確認</span>
+          </button>
+          <button
+            className={rawStatusFilter === "unverified" ? "active" : ""}
+            type="button"
+            onClick={() => showRawCategory("unverified")}
+          >
+            <strong>{unverifiedRecordCount}</strong>
+            <span>未查核</span>
+          </button>
+        </div>
       </header>
 
       <nav className="tabs" aria-label="第一階段工作區">
@@ -55,6 +96,8 @@ export function App() {
         ) : activeTab === "raw" ? (
           <Phase0RawInfoPanel
             records={phase0Records}
+            statusFilter={rawStatusFilter}
+            onStatusFilterChange={setRawStatusFilter}
             selectedRecordId={selectedRecordId}
             onSelect={selectForWorkbench}
           />

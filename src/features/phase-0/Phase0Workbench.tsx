@@ -1,8 +1,91 @@
+import { useMemo, useState } from "react";
 import { RecordCard } from "../../components/RecordCard";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Phase0JudgementCard } from "./Phase0JudgementCard";
-import { createPhase0Judgement } from "./phase0-heuristics";
-import type { Phase0MessyRecord } from "./phase0-types";
+import {
+  createPhase0EditableDraft,
+  createPhase0Judgement,
+  getPhase0PriorityReviewCandidateId,
+} from "./phase0-heuristics";
+import type {
+  Phase0Confidence,
+  Phase0JudgementDraft,
+  Phase0MessyRecord,
+  Phase0PossibleKind,
+  Phase0SuggestedNextStep,
+} from "./phase0-types";
+
+type WorkbenchSummaryFilter = "drafts" | "unsafe" | "review";
+
+const summaryFilterLabels: Record<WorkbenchSummaryFilter, string> = {
+  drafts: "草稿",
+  unsafe: "不能直接行動",
+  review: "需要人工確認",
+};
+
+const kindOptions: Array<{ value: Phase0PossibleKind; label: string }> = [
+  { value: "unknown", label: "候選類型待判斷" },
+  { value: "help_request_candidate", label: "求助候選" },
+  { value: "site_status_candidate", label: "地點狀態候選" },
+  { value: "task_candidate", label: "任務候選" },
+  { value: "assignment_candidate", label: "人員指派候選" },
+  { value: "announcement_candidate", label: "公告候選" },
+];
+
+const confidenceOptions: Array<{ value: Phase0Confidence; label: string }> = [
+  { value: "low", label: "低" },
+  { value: "medium", label: "中" },
+  { value: "high", label: "高" },
+];
+
+const nextStepOptions: Array<{
+  value: Phase0SuggestedNextStep;
+  label: string;
+}> = [
+  { value: "keep_raw", label: "先保留原始資訊" },
+  { value: "ask_for_more_info", label: "補問來源或現場資訊" },
+  { value: "send_to_human_review", label: "交給人工確認" },
+  { value: "create_candidate_report", label: "建立候選通報" },
+  { value: "create_site_update_suggestion", label: "建立地點更新建議" },
+  { value: "do_not_use_yet", label: "暫時不要使用" },
+];
+
+function createInitialDrafts(records: Phase0MessyRecord[]) {
+  const priorityCandidateId = getPhase0PriorityReviewCandidateId(records);
+  const starterRecords = records.slice(0, 6);
+  const priorityRecord = records.find(
+    (record) => record.id === priorityCandidateId,
+  );
+  const draftRecords =
+    priorityRecord &&
+    !starterRecords.some((record) => record.id === priorityRecord.id)
+      ? [...starterRecords.slice(0, 5), priorityRecord]
+      : starterRecords;
+
+  return Object.fromEntries(
+    draftRecords.map((record) => [
+      record.id,
+      createPhase0EditableDraft(record),
+    ]),
+  );
+}
+
+function textToLines(value: string) {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function needsHumanReview(record: Phase0MessyRecord) {
+  return (
+    record.verificationStatus !== "verified" ||
+    record.rawText.includes("代一位") ||
+    record.rawText.includes("家屬") ||
+    record.rawText.includes("不確定") ||
+    record.rawText.includes("不知道")
+  );
+}
 
 export function Phase0Workbench({
   records,
@@ -13,38 +96,357 @@ export function Phase0Workbench({
   selectedRecordId: string;
   onSelect: (recordId: string) => void;
 }) {
+  const initialDrafts = useMemo(() => createInitialDrafts(records), [records]);
+  const [drafts, setDrafts] =
+    useState<Record<string, Phase0JudgementDraft>>(initialDrafts);
+  const [summaryFilter, setSummaryFilter] =
+    useState<WorkbenchSummaryFilter>("drafts");
   const selectedRecord =
     records.find((record) => record.id === selectedRecordId) ?? records[0];
+  const priorityCandidateId = getPhase0PriorityReviewCandidateId(records);
   const safetyBoundary = createPhase0Judgement(selectedRecord);
+  const selectedDraft = drafts[selectedRecord.id];
+  const draftCount = Object.keys(drafts).length;
+  const unsafeDraftCount = Object.values(drafts).filter(
+    (draft) => draft.unsafeToActDirectly,
+  ).length;
+  const reviewDraftCount = Object.keys(drafts).filter((recordId) => {
+    const record = records.find((item) => item.id === recordId);
+
+    return record ? needsHumanReview(record) : false;
+  }).length;
+  const selectedNeedsReview = needsHumanReview(selectedRecord);
+  const visibleQueueRecords = records.filter((record) => {
+    const draft = drafts[record.id];
+
+    if (summaryFilter === "drafts") {
+      return Boolean(draft);
+    }
+
+    if (summaryFilter === "unsafe") {
+      return Boolean(draft?.unsafeToActDirectly);
+    }
+
+    return Boolean(draft) && needsHumanReview(record);
+  });
+
+  function showSummaryCategory(filter: WorkbenchSummaryFilter) {
+    const nextRecords = records.filter((record) => {
+      const draft = drafts[record.id];
+
+      if (filter === "drafts") {
+        return Boolean(draft);
+      }
+
+      if (filter === "unsafe") {
+        return Boolean(draft?.unsafeToActDirectly);
+      }
+
+      return Boolean(draft) && needsHumanReview(record);
+    });
+
+    setSummaryFilter(filter);
+
+    if (
+      nextRecords.length > 0 &&
+      !nextRecords.some((record) => record.id === selectedRecord.id)
+    ) {
+      onSelect(nextRecords[0].id);
+    }
+  }
+
+  function upsertDraft(record: Phase0MessyRecord) {
+    setDrafts((current) => ({
+      ...current,
+      [record.id]: createPhase0EditableDraft(record),
+    }));
+  }
+
+  function updateSelectedDraft(patch: Partial<Phase0JudgementDraft>) {
+    setDrafts((current) => {
+      const currentDraft =
+        current[selectedRecord.id] ?? createPhase0EditableDraft(selectedRecord);
+
+      return {
+        ...current,
+        [selectedRecord.id]: {
+          ...currentDraft,
+          ...patch,
+        },
+      };
+    });
+  }
+
+  function deleteSelectedDraft() {
+    setDrafts((current) => {
+      const next = { ...current };
+
+      delete next[selectedRecord.id];
+
+      return next;
+    });
+  }
 
   return (
     <div className="workbench">
       <div className="workbench__intro">
-        <p className="eyebrow">整理工作台</p>
-        <h2>第一階段的成功不是分類正確，而是把為什麼現在還不能判斷說清楚。</h2>
-        <p>
-          這裡先只標示安全邊界，真正的候選判斷要由小組和 coding agent
-          補上；這不是 runtime LLM 分析，也不是正式資料模型。
+        <div>
+          <p className="eyebrow">整理工作台</p>
+          <h2>
+            第一階段的成功不是分類正確，而是把為什麼現在還不能判斷說清楚。
+          </h2>
+        </div>
+        <div className="workbench__summary" aria-label="整理草稿摘要">
+          <button
+            className={summaryFilter === "drafts" ? "active" : ""}
+            type="button"
+            onClick={() => showSummaryCategory("drafts")}
+          >
+            <span>草稿</span>
+            <strong>{draftCount}</strong>
+          </button>
+          <button
+            className={summaryFilter === "unsafe" ? "active" : ""}
+            type="button"
+            onClick={() => showSummaryCategory("unsafe")}
+          >
+            <span>不能直接行動</span>
+            <strong>{unsafeDraftCount}</strong>
+          </button>
+          <button
+            className={summaryFilter === "review" ? "active" : ""}
+            type="button"
+            onClick={() => showSummaryCategory("review")}
+          >
+            <span>需要人工確認</span>
+            <strong>{reviewDraftCount}</strong>
+          </button>
+        </div>
+        <p className="workbench__filter-note">
+          目前篩選：{summaryFilterLabels[summaryFilter]}。紅色小卡是 AI
+          候選的優先人工確認項目，不代表已確認或可直接派工。
         </p>
       </div>
 
       <div className="workbench__layout">
         <aside className="workbench__queue" aria-label="選擇原始資訊">
-          {records.map((record) => (
+          <div className="workbench__queue-header">
+            <h3>選擇一筆</h3>
+            <span>{visibleQueueRecords.length} 筆</span>
+          </div>
+          {visibleQueueRecords.map((record) => (
             <button
-              className={record.id === selectedRecord.id ? "active" : ""}
+              className={`${record.id === selectedRecord.id ? "active" : ""} ${
+                record.id === priorityCandidateId ? "queue-item--priority" : ""
+              }`}
               key={record.id}
               type="button"
               onClick={() => onSelect(record.id)}
             >
-              <span>{record.id}</span>
-              <StatusBadge status={record.verificationStatus} />
+              <span className="queue-item__top">
+                <strong>{record.id}</strong>
+                <StatusBadge status={record.verificationStatus} />
+              </span>
+              <span className="queue-item__meta">
+                {drafts[record.id] ? "已有草稿" : "尚未建草稿"} ·{" "}
+                {needsHumanReview(record) ? "需人工確認" : "可先保留"}
+              </span>
+              {record.id === priorityCandidateId ? (
+                <span className="priority-badge">AI 候選：優先人工確認</span>
+              ) : null}
             </button>
           ))}
         </aside>
 
         <div className="workbench__main">
+          <section className="selected-record-bar" aria-label="目前處理資訊">
+            <div>
+              <p className="eyebrow">目前處理</p>
+              <h3>{selectedRecord.id}</h3>
+            </div>
+            <div className="selected-record-bar__badges">
+              <StatusBadge status={selectedRecord.verificationStatus} />
+              {selectedNeedsReview ? (
+                <span className="review-badge">需人工確認</span>
+              ) : null}
+            </div>
+          </section>
+
           <RecordCard record={selectedRecord} />
+
+          {selectedDraft ? (
+            <article className="draft-editor">
+              <div className="draft-editor__header">
+                <div>
+                  <p className="eyebrow">可編輯整理草稿</p>
+                  <h3>{selectedRecord.id} 候選判斷</h3>
+                </div>
+                <StatusBadge status="draft" />
+              </div>
+
+              <p>
+                這是小組可修改的候選整理，不是已確認事實。所有欄位都應回到原文找依據，不能直接變成志工任務。
+              </p>
+
+              <section className="draft-section">
+                <div className="draft-section__title">
+                  <span>1</span>
+                  <h4>先判斷它可能是什麼</h4>
+                </div>
+                <div className="draft-editor__grid">
+                  <label>
+                    候選類型
+                    <select
+                      value={selectedDraft.possibleKind}
+                      onChange={(event) =>
+                        updateSelectedDraft({
+                          possibleKind: event.target
+                            .value as Phase0PossibleKind,
+                        })
+                      }
+                    >
+                      {kindOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    信心程度
+                    <select
+                      value={selectedDraft.confidence}
+                      onChange={(event) =>
+                        updateSelectedDraft({
+                          confidence: event.target.value as Phase0Confidence,
+                        })
+                      }
+                    >
+                      {confidenceOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    建議下一步
+                    <select
+                      value={selectedDraft.suggestedNextStep}
+                      onChange={(event) =>
+                        updateSelectedDraft({
+                          suggestedNextStep: event.target
+                            .value as Phase0SuggestedNextStep,
+                        })
+                      }
+                    >
+                      {nextStepOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </section>
+
+              <label className="draft-editor__checkbox">
+                <input
+                  type="checkbox"
+                  checked={selectedDraft.unsafeToActDirectly}
+                  onChange={(event) =>
+                    updateSelectedDraft({
+                      unsafeToActDirectly: event.target.checked,
+                    })
+                  }
+                />
+                不能直接變成任務或行動
+              </label>
+
+              <section className="draft-section">
+                <div className="draft-section__title">
+                  <span>2</span>
+                  <h4>寫下依據與卡住原因</h4>
+                </div>
+                <label>
+                  原文依據
+                  <textarea
+                    value={selectedDraft.evidence.join("\n")}
+                    onChange={(event) =>
+                      updateSelectedDraft({
+                        evidence: textToLines(event.target.value),
+                      })
+                    }
+                  />
+                </label>
+
+                <label>
+                  卡住原因
+                  <textarea
+                    value={selectedDraft.blockers.join("\n")}
+                    onChange={(event) =>
+                      updateSelectedDraft({
+                        blockers: textToLines(event.target.value),
+                      })
+                    }
+                  />
+                </label>
+              </section>
+
+              <section className="draft-section">
+                <div className="draft-section__title">
+                  <span>3</span>
+                  <h4>留下人工確認筆記</h4>
+                </div>
+                <label>
+                  人工確認筆記
+                  <textarea
+                    value={selectedDraft.humanReviewNote ?? ""}
+                    onChange={(event) =>
+                      updateSelectedDraft({
+                        humanReviewNote: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+              </section>
+
+              {selectedNeedsReview ? (
+                <p className="draft-editor__warning">
+                  這筆資訊目前需要人工確認；若操作者不是當事人，還要確認授權、位置與現況。
+                </p>
+              ) : null}
+
+              <div className="draft-editor__actions">
+                <button
+                  type="button"
+                  onClick={() => upsertDraft(selectedRecord)}
+                >
+                  重設這筆草稿
+                </button>
+                <button type="button" onClick={deleteSelectedDraft}>
+                  刪除這筆草稿
+                </button>
+              </div>
+            </article>
+          ) : (
+            <article className="draft-editor">
+              <div className="draft-editor__header">
+                <div>
+                  <p className="eyebrow">尚未建立草稿</p>
+                  <h3>{selectedRecord.id} 還沒有整理草稿</h3>
+                </div>
+              </div>
+              <p>
+                可以先保留原始資訊，也可以建立一張保守草稿，再由小組人工修正。
+              </p>
+              <button type="button" onClick={() => upsertDraft(selectedRecord)}>
+                建立整理草稿
+              </button>
+            </article>
+          )}
 
           <Phase0JudgementCard
             judgement={safetyBoundary}
@@ -53,16 +455,25 @@ export function Phase0Workbench({
         </div>
 
         <aside className="workbench__checklist">
-          <h3>第一階段完成檢查</h3>
+          <h3>本頁進度</h3>
           <ul>
-            <li>Starter 已載入 {records.length} 筆原始資訊</li>
-            <li>請 agent 加上建立、編輯、刪除或重設整理草稿</li>
-            <li>至少讓 6 筆原始資訊被嘗試整理成可編輯草稿</li>
-            <li>至少挑 2 個候選判斷由人類質疑或修正</li>
             <li>
-              把資料品質問題寫進 observations，並記錄 agent 哪裡不能直接相信
+              已載入 <strong>{records.length}</strong> 筆原始資訊
             </li>
+            <li>
+              已建立 <strong>{draftCount}</strong> 筆可編輯草稿
+            </li>
+            <li>
+              <strong>{unsafeDraftCount}</strong> 筆標示不能直接變成任務
+            </li>
+            <li>
+              <strong>{reviewDraftCount}</strong> 筆需要人工確認或補問來源
+            </li>
+            <li>請挑至少 2 個候選判斷由人類質疑或修正</li>
           </ul>
+          <button type="button" onClick={() => setDrafts(initialDrafts)}>
+            重設全部草稿
+          </button>
         </aside>
       </div>
     </div>

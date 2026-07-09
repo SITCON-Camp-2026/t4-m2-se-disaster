@@ -17,6 +17,8 @@ export type Phase0SuggestedNextStep =
   | "create_site_update_suggestion"
   | "do_not_use_yet";
 
+export type Phase0RawStatusFilter = "all" | "needs_review" | "unverified";
+
 export type Phase0MessyRecord = {
   id: string;
   rawText: string;
