@@ -86,10 +86,19 @@ describe("App", () => {
     expect(screen.getByText("未暫存變更")).toBeInTheDocument();
     expect(screen.getByText("目前只能閱讀與等待確認")).toBeInTheDocument();
     expect(screen.getByText(/行動者不能出發/)).toBeInTheDocument();
+    expect(screen.getByText("流程停在：閱讀與等待確認")).toBeInTheDocument();
+    expect(
+      screen.getByText(/不能判斷真實緊急、派工、出發或公開資訊/),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("查核狀態不是已確認").length).toBeGreaterThan(0);
     expect(screen.getByLabelText("不能直接變成任務或行動")).toBeChecked();
+    expect(
+      screen.getByText(/通報線索或地點更新線索都不是正式任務/),
+    ).toBeInTheDocument();
     expect(
       screen.getByLabelText("筆記：請寫下為什麼需要確認"),
     ).toBeInTheDocument();
+    expect(screen.getByText("本筆需要確認的原因")).toBeInTheDocument();
     expect(screen.getByText("記下通報線索")).toBeInTheDocument();
     expect(screen.getByText("記下地點更新線索")).toBeInTheDocument();
     expect(screen.queryByText("建立候選通報")).not.toBeInTheDocument();
